@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.8 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.9 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -464,23 +464,25 @@ class LightControlsCardEditor extends LitElement {
     /* Collapsible Sections */
     .section {
       margin-bottom: 12px;
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border: 2px solid var(--divider-color, #3a3a3a);
       border-radius: 12px;
       overflow: hidden;
-      background: var(--card-background-color);
+      background: var(--card-background-color, #1c1c1c);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
     .section-header {
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 14px 16px;
-      background: var(--secondary-background-color, #f5f5f5);
+      background: var(--secondary-background-color, #2a2a2a);
       cursor: pointer;
       user-select: none;
       transition: background 0.2s;
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
     }
     .section-header:hover {
-      background: var(--primary-background-color, #eaeaea);
+      background: var(--primary-background-color, #333333);
     }
     .section-icon {
       font-size: 18px;
@@ -489,13 +491,14 @@ class LightControlsCardEditor extends LitElement {
     }
     .section-title {
       flex: 1;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 14px;
-      color: var(--primary-text-color);
+      color: var(--primary-text-color, #ffffff);
+      letter-spacing: 0.3px;
     }
     .section-chevron {
       font-size: 12px;
-      color: var(--secondary-text-color);
+      color: var(--secondary-text-color, #888888);
       transition: transform 0.2s;
     }
     .section-chevron.expanded {
@@ -511,6 +514,7 @@ class LightControlsCardEditor extends LitElement {
     }
     .section-body {
       padding: 16px;
+      background: var(--card-background-color, #1c1c1c);
     }
     
     /* Form Elements */
@@ -523,23 +527,23 @@ class LightControlsCardEditor extends LitElement {
     label {
       display: block;
       margin-bottom: 6px;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 13px;
-      color: var(--primary-text-color);
+      color: var(--primary-text-color, #ffffff);
     }
     .sublabel {
       font-weight: 400;
       font-size: 11px;
-      color: var(--secondary-text-color);
+      color: var(--secondary-text-color, #888888);
       margin-left: 4px;
     }
     input[type="text"], textarea {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid var(--divider-color, #e0e0e0);
+      border: 2px solid var(--divider-color, #444444);
       border-radius: 8px;
-      background: var(--card-background-color);
-      color: var(--primary-text-color);
+      background: var(--input-fill-color, #252525);
+      color: var(--primary-text-color, #ffffff);
       box-sizing: border-box;
       font-family: inherit;
       font-size: 14px;
@@ -548,7 +552,7 @@ class LightControlsCardEditor extends LitElement {
     input[type="text"]:focus, textarea:focus {
       outline: none;
       border-color: var(--primary-color, #03a9f4);
-      box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.2);
+      box-shadow: 0 0 0 3px rgba(3, 169, 244, 0.3);
     }
     textarea {
       min-height: 80px;
@@ -559,9 +563,15 @@ class LightControlsCardEditor extends LitElement {
     }
     .hint {
       font-size: 11px;
-      color: var(--secondary-text-color);
+      color: var(--secondary-text-color, #888888);
       margin-top: 6px;
       line-height: 1.4;
+    }
+    
+    /* Entity Picker */
+    ha-entity-picker {
+      display: block;
+      width: 100%;
     }
     
     /* Color Picker Row */
@@ -569,79 +579,109 @@ class LightControlsCardEditor extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      padding: 12px 14px;
+      margin: 0 -14px;
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
+      background: var(--secondary-background-color, #222222);
+    }
+    .color-row:first-of-type {
+      margin-top: 8px;
     }
     .color-row:last-child {
       border-bottom: none;
+      margin-bottom: -14px;
+      border-radius: 0 0 8px 8px;
     }
     .color-row label {
       margin-bottom: 0;
       flex: 1;
+      font-weight: 500;
+      color: var(--primary-text-color, #ffffff);
     }
     .color-picker-wrapper {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .color-value {
       font-size: 12px;
-      font-family: monospace;
-      color: var(--secondary-text-color);
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      color: var(--secondary-text-color, #aaaaaa);
+      background: var(--input-fill-color, #333333);
+      padding: 4px 8px;
+      border-radius: 4px;
     }
     input[type="color"] {
-      width: 40px;
-      height: 40px;
-      padding: 2px;
-      border: 2px solid var(--divider-color, #e0e0e0);
-      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      padding: 3px;
+      border: 3px solid var(--divider-color, #444444);
+      border-radius: 10px;
       cursor: pointer;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, transform 0.1s;
+      background: transparent;
     }
     input[type="color"]:hover {
       border-color: var(--primary-color, #03a9f4);
+      transform: scale(1.05);
     }
     
     /* Slider Row */
     .slider-row {
-      padding: 8px 0;
+      padding: 12px 14px;
+      margin: 0 -14px;
+      background: var(--secondary-background-color, #222222);
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
+    }
+    .slider-row:first-of-type {
+      margin-top: -14px;
+      border-radius: 8px 8px 0 0;
+    }
+    .slider-row:last-of-type {
+      border-bottom: none;
     }
     .slider-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .slider-header label {
       margin-bottom: 0;
+      font-weight: 500;
+      color: var(--primary-text-color, #ffffff);
     }
     .slider-value {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       color: var(--primary-color, #03a9f4);
-      min-width: 40px;
+      min-width: 50px;
       text-align: right;
+      background: rgba(3, 169, 244, 0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
     }
     input[type="range"] {
       width: 100%;
-      height: 6px;
-      border-radius: 3px;
-      background: var(--divider-color, #e0e0e0);
+      height: 8px;
+      border-radius: 4px;
+      background: var(--divider-color, #444444);
       appearance: none;
       cursor: pointer;
     }
     input[type="range"]::-webkit-slider-thumb {
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: var(--primary-color, #03a9f4);
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       transition: transform 0.1s;
+      border: 2px solid white;
     }
     input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.1);
+      transform: scale(1.15);
     }
     
     /* Toggle Row */
@@ -649,19 +689,29 @@ class LightControlsCardEditor extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      padding: 14px 14px;
+      margin: 0 -14px;
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
+      background: var(--secondary-background-color, #222222);
+    }
+    .toggle-row:first-of-type {
+      margin-top: -14px;
+      border-radius: 8px 8px 0 0;
     }
     .toggle-row:last-child {
       border-bottom: none;
+      margin-bottom: -14px;
+      border-radius: 0 0 8px 8px;
     }
     .toggle-row label {
       margin-bottom: 0;
+      font-weight: 500;
+      color: var(--primary-text-color, #ffffff);
     }
     .toggle-switch {
       position: relative;
-      width: 48px;
-      height: 26px;
+      width: 52px;
+      height: 28px;
       flex-shrink: 0;
     }
     .toggle-switch input {
@@ -676,9 +726,10 @@ class LightControlsCardEditor extends LitElement {
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
+      background-color: #555555;
       transition: 0.3s;
-      border-radius: 26px;
+      border-radius: 28px;
+      border: 2px solid #666666;
     }
     .toggle-slider:before {
       position: absolute;
@@ -686,71 +737,79 @@ class LightControlsCardEditor extends LitElement {
       height: 20px;
       width: 20px;
       left: 3px;
-      bottom: 3px;
+      bottom: 2px;
       background-color: white;
       transition: 0.3s;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
     .toggle-switch input:checked + .toggle-slider {
       background-color: var(--primary-color, #03a9f4);
+      border-color: var(--primary-color, #03a9f4);
     }
     .toggle-switch input:checked + .toggle-slider:before {
-      transform: translateX(22px);
+      transform: translateX(24px);
     }
     
     /* Light Items */
     .lights-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 16px;
     }
     .light-item {
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 10px;
+      border: 2px solid var(--divider-color, #3a3a3a);
+      border-radius: 12px;
       overflow: hidden;
-      background: var(--card-background-color);
+      background: var(--card-background-color, #1c1c1c);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
     }
     .light-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 14px;
-      background: var(--secondary-background-color, #f5f5f5);
+      padding: 14px 16px;
+      background: var(--secondary-background-color, #2a2a2a);
       cursor: pointer;
       transition: background 0.2s;
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
     }
     .light-header:hover {
-      background: var(--primary-background-color, #e8e8e8);
+      background: var(--primary-background-color, #333333);
     }
     .light-header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
     .light-number {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: var(--primary-color, #03a9f4);
       color: white;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     .light-name {
-      font-weight: 500;
+      font-weight: 600;
       font-size: 14px;
+      color: var(--primary-text-color, #ffffff);
     }
     .light-entity {
       font-size: 11px;
-      color: var(--secondary-text-color);
+      color: var(--secondary-text-color, #888888);
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      margin-top: 2px;
     }
     .expand-icon {
       font-size: 12px;
-      color: var(--secondary-text-color);
+      color: var(--secondary-text-color, #888888);
       transition: transform 0.2s;
     }
     .expand-icon.expanded {
@@ -766,26 +825,29 @@ class LightControlsCardEditor extends LitElement {
     }
     .light-body {
       padding: 16px;
+      background: var(--card-background-color, #1c1c1c);
     }
     
     /* Light Editor Subsections */
     .subsection {
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      margin-bottom: 20px;
+      padding: 14px;
+      background: var(--secondary-background-color, #222222);
+      border-radius: 10px;
+      border: 1px solid var(--divider-color, #3a3a3a);
     }
     .subsection:last-child {
       margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
     }
     .subsection-title {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--secondary-text-color);
-      margin-bottom: 12px;
+      letter-spacing: 0.8px;
+      color: var(--primary-color, #03a9f4);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--divider-color, #3a3a3a);
     }
     
     /* SVG Preview */
@@ -858,12 +920,21 @@ class LightControlsCardEditor extends LitElement {
     /* Empty State */
     .empty-state {
       text-align: center;
-      padding: 24px;
-      color: var(--secondary-text-color);
+      padding: 32px 24px;
+      color: var(--secondary-text-color, #888888);
+      background: var(--secondary-background-color, #222222);
+      border-radius: 10px;
+      border: 2px dashed var(--divider-color, #3a3a3a);
+      margin-bottom: 16px;
     }
     .empty-state-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+    .empty-state-text {
+      font-size: 14px;
+      font-weight: 500;
     }
   `;
 
@@ -1105,13 +1176,14 @@ class LightControlsCardEditor extends LitElement {
             <div class="subsection">
               <div class="subsection-title">Basic Information</div>
               <div class="row">
-                <label>Entity ID</label>
-                <input
-                  type="text"
+                <label>Entity</label>
+                <ha-entity-picker
+                  .hass="${this.hass}"
                   .value="${light.entity || ''}"
-                  @input="${(e) => this._updateLight(index, 'entity', e.target.value)}"
-                  placeholder="light.living_room"
-                />
+                  .includeDomains="${['light', 'switch', 'input_boolean', 'fan', 'cover', 'media_player', 'scene', 'script']}"
+                  allow-custom-entity
+                  @value-changed="${(e) => this._updateLight(index, 'entity', e.detail.value)}"
+                ></ha-entity-picker>
               </div>
               <div class="row">
                 <label>Display Name</label>
@@ -1121,6 +1193,7 @@ class LightControlsCardEditor extends LitElement {
                   @input="${(e) => this._updateLight(index, 'name', e.target.value)}"
                   placeholder="Living Room"
                 />
+                <div class="hint">Leave empty to use entity's friendly name</div>
               </div>
               <div class="color-row">
                 <label>Label Color</label>
