@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.6 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.7 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -153,6 +153,9 @@ class LightControlsCard extends LitElement {
       title_color: config.title_color || "#998888",
       divider_color: config.divider_color || "#9F9F9F",
       scale: config.scale !== undefined ? config.scale : 1,
+      icon_size: config.icon_size !== undefined ? config.icon_size : 1,
+      title_size: config.title_size !== undefined ? config.title_size : 1,
+      label_size: config.label_size !== undefined ? config.label_size : 1,
       show_title: config.show_title !== undefined ? config.show_title : true,
       show_divider: config.show_divider !== undefined ? config.show_divider : true,
       show_labels: config.show_labels !== undefined ? config.show_labels : true,
@@ -167,6 +170,9 @@ class LightControlsCard extends LitElement {
     }
 
     const scale = this.config.scale || 1;
+    const iconSize = (this.config.icon_size || 1) * scale;
+    const titleSize = (this.config.title_size || 1) * scale;
+    const labelSize = (this.config.label_size || 1) * scale;
     const showTitle = this.config.show_title !== false;
     const showDivider = this.config.show_divider !== false;
     const showLabels = this.config.show_labels !== false;
@@ -178,8 +184,8 @@ class LightControlsCard extends LitElement {
             ${showTitle ? html`
               <h1 class="title" style="
                 color: ${this.config.title_color || '#998888'};
-                font-size: ${32 * scale}px;
-                line-height: ${48.64 * scale}px;
+                font-size: ${32 * titleSize}px;
+                line-height: ${48.64 * titleSize}px;
               ">
                 ${this.config.title}
               </h1>
@@ -191,13 +197,13 @@ class LightControlsCard extends LitElement {
         ` : ''}
         
         <div class="lights">
-          ${this.config.lights.map((light, index) => this._renderLightCard(light, index, scale, showLabels))}
+          ${this.config.lights.map((light, index) => this._renderLightCard(light, index, iconSize, labelSize, showLabels))}
         </div>
       </div>
     `;
   }
 
-  _renderLightCard(light, index, scale = 1, showLabels = true) {
+  _renderLightCard(light, index, iconSize = 1, labelSize = 1, showLabels = true) {
     const entity = light.entity ? this.hass.states[light.entity] : null;
     const isOn = entity && entity.state === "on";
     
@@ -237,19 +243,19 @@ class LightControlsCard extends LitElement {
         data-light="${light.entity || index}"
         data-state="${isOn ? 'on' : 'off'}"
         @click="${() => this._handleClick(light)}"
-        style="gap: ${20 * scale}px;"
+        style="gap: ${20 * iconSize}px;"
       >
         <div class="icon-wrapper" style="
-          width: ${71 * scale}px;
-          min-height: ${71 * scale}px;
+          width: ${71 * iconSize}px;
+          min-height: ${71 * iconSize}px;
         ">
-          <div .innerHTML="${svgContent}" style="transform: scale(${scale}); transform-origin: center;"></div>
+          <div .innerHTML="${svgContent}" style="transform: scale(${iconSize}); transform-origin: center;"></div>
         </div>
         ${showLabels ? html`
           <div class="name-label" style="
             color: ${labelColor};
-            font-size: ${24 * scale}px;
-            line-height: ${36.48 * scale}px;
+            font-size: ${24 * labelSize}px;
+            line-height: ${36.48 * labelSize}px;
           ">
             ${light.name || "Light"}
           </div>
@@ -414,6 +420,9 @@ class LightControlsCard extends LitElement {
       title_color: "#998888",
       divider_color: "#9F9F9F",
       scale: 1,
+      icon_size: 1,
+      title_size: 1,
+      label_size: 1,
       show_title: true,
       show_divider: true,
       show_labels: true,
@@ -698,7 +707,7 @@ class LightControlsCardEditor extends LitElement {
           
           <!-- Scale Slider -->
           <div class="scale-row">
-            <label>Scale (Text & Icons)</label>
+            <label>Global Scale</label>
             <input
               type="range"
               min="0.5"
@@ -708,6 +717,48 @@ class LightControlsCardEditor extends LitElement {
               @input="${(e) => this._updateConfig('scale', parseFloat(e.target.value))}"
             />
             <div class="scale-value">${this.config.scale || 1}x</div>
+          </div>
+
+          <!-- Icon Size Slider -->
+          <div class="scale-row">
+            <label>Icon Size</label>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              .value="${this.config.icon_size || 1}"
+              @input="${(e) => this._updateConfig('icon_size', parseFloat(e.target.value))}"
+            />
+            <div class="scale-value">${this.config.icon_size || 1}x</div>
+          </div>
+
+          <!-- Title Size Slider -->
+          <div class="scale-row">
+            <label>Title Size</label>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              .value="${this.config.title_size || 1}"
+              @input="${(e) => this._updateConfig('title_size', parseFloat(e.target.value))}"
+            />
+            <div class="scale-value">${this.config.title_size || 1}x</div>
+          </div>
+
+          <!-- Label Size Slider -->
+          <div class="scale-row">
+            <label>Label Size</label>
+            <input
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.1"
+              .value="${this.config.label_size || 1}"
+              @input="${(e) => this._updateConfig('label_size', parseFloat(e.target.value))}"
+            />
+            <div class="scale-value">${this.config.label_size || 1}x</div>
           </div>
 
           <!-- Visibility Toggles -->
