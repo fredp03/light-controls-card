@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.4 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.5 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -268,14 +268,14 @@ class LightControlsCard extends LitElement {
 
   _handleClick(light) {
     // Check for custom tap_action
-    if (light.tap_action) {
+    if (light.tap_action && light.tap_action.trim()) {
       const action = light.tap_action;
       
       // Parse action if it's a string (YAML format from editor)
       let actionConfig = action;
       if (typeof action === 'string') {
         try {
-          // Simple YAML-like parsing for common format
+          // Parse YAML-like format
           actionConfig = this._parseActionYaml(action);
         } catch (e) {
           console.error('Failed to parse tap_action:', e);
@@ -284,12 +284,17 @@ class LightControlsCard extends LitElement {
       }
 
       // Execute the custom action
-      if (actionConfig.action) {
+      if (actionConfig && actionConfig.action) {
         const [domain, service] = actionConfig.action.split('.');
-        const serviceData = { ...actionConfig.data };
+        const serviceData = {};
+        
+        // Add data fields if present
+        if (actionConfig.data && typeof actionConfig.data === 'object') {
+          Object.assign(serviceData, actionConfig.data);
+        }
         
         // Handle target
-        if (actionConfig.target) {
+        if (actionConfig.target && typeof actionConfig.target === 'object') {
           if (actionConfig.target.entity_id) {
             serviceData.entity_id = actionConfig.target.entity_id;
           }
@@ -306,7 +311,7 @@ class LightControlsCard extends LitElement {
       }
     }
 
-    // Default behavior: toggle light entity
+    // Default behavior: toggle entity
     if (!light.entity) return;
     
     const entity = this.hass.states[light.entity];
@@ -322,41 +327,57 @@ class LightControlsCard extends LitElement {
   }
 
   _parseActionYaml(yamlString) {
-    // Simple YAML parser for action configuration
-    const result = {};
+    // Robust YAML parser for action configuration
+    const result = {
+      action: null,
+      target: {},
+      data: {}
+    };
+    
     const lines = yamlString.trim().split('\n');
     let currentSection = null;
-    let currentIndent = 0;
-
-    for (const line of lines) {
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-
-      const indent = line.search(/\S/);
-      const match = trimmed.match(/^([\w_]+):\s*(.*)$/);
       
-      if (match) {
-        const [, key, value] = match;
-        
-        if (indent === 0) {
-          // Top level
-          if (value) {
+      // Skip empty lines and comments
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      
+      // Count leading spaces for indent detection
+      const indent = line.search(/\S/);
+      
+      // Match key: value pattern
+      const colonIndex = trimmed.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      const key = trimmed.substring(0, colonIndex).trim();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      
+      if (indent === 0) {
+        // Top-level keys
+        if (key === 'action') {
+          result.action = value;
+          currentSection = null;
+        } else if (key === 'target' || key === 'data') {
+          currentSection = key;
+          // If value is on same line (inline), don't treat as section
+          if (value && !value.startsWith('{')) {
             result[key] = value;
-          } else {
-            result[key] = {};
-            currentSection = key;
-            currentIndent = indent;
+            currentSection = null;
           }
-        } else if (currentSection) {
-          // Nested
-          if (typeof result[currentSection] !== 'object') {
-            result[currentSection] = {};
-          }
+        } else {
+          result[key] = value || {};
+          currentSection = value ? null : key;
+        }
+      } else if (indent > 0 && currentSection) {
+        // Nested keys under target or data
+        if (value) {
           result[currentSection][key] = value;
         }
       }
     }
-
+    
     return result;
   }
 
