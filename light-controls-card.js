@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.5 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.6 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -336,6 +336,8 @@ class LightControlsCard extends LitElement {
     
     const lines = yamlString.trim().split('\n');
     let currentSection = null;
+    let currentKey = null;
+    let currentArray = null;
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -347,6 +349,19 @@ class LightControlsCard extends LitElement {
       // Count leading spaces for indent detection
       const indent = line.search(/\S/);
       
+      // Check for array item (- value)
+      if (trimmed.startsWith('- ')) {
+        const arrayValue = trimmed.substring(2).trim();
+        if (currentSection && currentKey) {
+          // Add to array
+          if (!Array.isArray(result[currentSection][currentKey])) {
+            result[currentSection][currentKey] = [];
+          }
+          result[currentSection][currentKey].push(arrayValue);
+        }
+        continue;
+      }
+      
       // Match key: value pattern
       const colonIndex = trimmed.indexOf(':');
       if (colonIndex === -1) continue;
@@ -356,6 +371,7 @@ class LightControlsCard extends LitElement {
       
       if (indent === 0) {
         // Top-level keys
+        currentKey = null;
         if (key === 'action') {
           result.action = value;
           currentSection = null;
@@ -372,9 +388,12 @@ class LightControlsCard extends LitElement {
         }
       } else if (indent > 0 && currentSection) {
         // Nested keys under target or data
+        currentKey = key;
         if (value) {
           result[currentSection][key] = value;
+          currentKey = null; // Value on same line, not expecting array
         }
+        // If no value, might be followed by array items
       }
     }
     
