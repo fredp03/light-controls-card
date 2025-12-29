@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.2 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.3 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -152,6 +152,10 @@ class LightControlsCard extends LitElement {
       title: config.title || "Light Controls",
       title_color: config.title_color || "#998888",
       divider_color: config.divider_color || "#9F9F9F",
+      scale: config.scale !== undefined ? config.scale : 1,
+      show_title: config.show_title !== undefined ? config.show_title : true,
+      show_divider: config.show_divider !== undefined ? config.show_divider : true,
+      show_labels: config.show_labels !== undefined ? config.show_labels : true,
       lights: config.lights,
       ...config
     };
@@ -162,23 +166,38 @@ class LightControlsCard extends LitElement {
       return html`<div>Loading...</div>`;
     }
 
+    const scale = this.config.scale || 1;
+    const showTitle = this.config.show_title !== false;
+    const showDivider = this.config.show_divider !== false;
+    const showLabels = this.config.show_labels !== false;
+
     return html`
       <div class="wrapper">
-        <div class="title-section">
-          <h1 class="title" style="color: ${this.config.title_color || '#998888'}">
-            ${this.config.title}
-          </h1>
-          <div class="divider" style="background: ${this.config.divider_color || '#9F9F9F'}"></div>
-        </div>
+        ${(showTitle || showDivider) ? html`
+          <div class="title-section" style="gap: ${46 * scale}px;">
+            ${showTitle ? html`
+              <h1 class="title" style="
+                color: ${this.config.title_color || '#998888'};
+                font-size: ${32 * scale}px;
+                line-height: ${48.64 * scale}px;
+              ">
+                ${this.config.title}
+              </h1>
+            ` : ''}
+            ${showDivider ? html`
+              <div class="divider" style="background: ${this.config.divider_color || '#9F9F9F'}"></div>
+            ` : ''}
+          </div>
+        ` : ''}
         
         <div class="lights">
-          ${this.config.lights.map((light, index) => this._renderLightCard(light, index))}
+          ${this.config.lights.map((light, index) => this._renderLightCard(light, index, scale, showLabels))}
         </div>
       </div>
     `;
   }
 
-  _renderLightCard(light, index) {
+  _renderLightCard(light, index, scale = 1, showLabels = true) {
     const entity = light.entity ? this.hass.states[light.entity] : null;
     const isOn = entity && entity.state === "on";
     
@@ -218,13 +237,23 @@ class LightControlsCard extends LitElement {
         data-light="${light.entity || index}"
         data-state="${isOn ? 'on' : 'off'}"
         @click="${() => this._handleClick(light)}"
+        style="gap: ${20 * scale}px;"
       >
-        <div class="icon-wrapper">
-          <div .innerHTML="${svgContent}"></div>
+        <div class="icon-wrapper" style="
+          width: ${71 * scale}px;
+          min-height: ${71 * scale}px;
+        ">
+          <div .innerHTML="${svgContent}" style="transform: scale(${scale}); transform-origin: center;"></div>
         </div>
-        <div class="name-label" style="color: ${labelColor}">
-          ${light.name || "Light"}
-        </div>
+        ${showLabels ? html`
+          <div class="name-label" style="
+            color: ${labelColor};
+            font-size: ${24 * scale}px;
+            line-height: ${36.48 * scale}px;
+          ">
+            ${light.name || "Light"}
+          </div>
+        ` : ''}
       </div>
     `);
 
@@ -262,6 +291,10 @@ class LightControlsCard extends LitElement {
       title: "Light Controls",
       title_color: "#998888",
       divider_color: "#9F9F9F",
+      scale: 1,
+      show_title: true,
+      show_divider: true,
+      show_labels: true,
       lights: [
         {
           entity: "light.left_lamp",
@@ -429,6 +462,66 @@ class LightControlsCardEditor extends LitElement {
       max-width: 40px;
       max-height: 40px;
     }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+    .toggle-row label {
+      margin-bottom: 0;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--primary-color, #03a9f4);
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+    .scale-row {
+      margin-bottom: 12px;
+    }
+    .scale-row input[type="range"] {
+      width: 100%;
+      margin-top: 4px;
+    }
+    .scale-value {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      text-align: right;
+      margin-top: 4px;
+    }
   `;
 
   constructor() {
@@ -473,6 +566,55 @@ class LightControlsCardEditor extends LitElement {
               .value="${this.config.divider_color || '#9F9F9F'}"
               @input="${(e) => this._updateConfig('divider_color', e.target.value)}"
             />
+          </div>
+          
+          <!-- Scale Slider -->
+          <div class="scale-row">
+            <label>Scale (Text & Icons)</label>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              .value="${this.config.scale || 1}"
+              @input="${(e) => this._updateConfig('scale', parseFloat(e.target.value))}"
+            />
+            <div class="scale-value">${this.config.scale || 1}x</div>
+          </div>
+
+          <!-- Visibility Toggles -->
+          <div class="toggle-row">
+            <label>Show Title</label>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                .checked="${this.config.show_title !== false}"
+                @change="${(e) => this._updateConfig('show_title', e.target.checked)}"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <label>Show Divider</label>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                .checked="${this.config.show_divider !== false}"
+                @change="${(e) => this._updateConfig('show_divider', e.target.checked)}"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <label>Show Labels</label>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                .checked="${this.config.show_labels !== false}"
+                @change="${(e) => this._updateConfig('show_labels', e.target.checked)}"
+              />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
