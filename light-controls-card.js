@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.3 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.4 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -267,15 +267,97 @@ class LightControlsCard extends LitElement {
   }
 
   _handleClick(light) {
+    // Check for custom tap_action
+    if (light.tap_action) {
+      const action = light.tap_action;
+      
+      // Parse action if it's a string (YAML format from editor)
+      let actionConfig = action;
+      if (typeof action === 'string') {
+        try {
+          // Simple YAML-like parsing for common format
+          actionConfig = this._parseActionYaml(action);
+        } catch (e) {
+          console.error('Failed to parse tap_action:', e);
+          return;
+        }
+      }
+
+      // Execute the custom action
+      if (actionConfig.action) {
+        const [domain, service] = actionConfig.action.split('.');
+        const serviceData = { ...actionConfig.data };
+        
+        // Handle target
+        if (actionConfig.target) {
+          if (actionConfig.target.entity_id) {
+            serviceData.entity_id = actionConfig.target.entity_id;
+          }
+          if (actionConfig.target.device_id) {
+            serviceData.device_id = actionConfig.target.device_id;
+          }
+          if (actionConfig.target.area_id) {
+            serviceData.area_id = actionConfig.target.area_id;
+          }
+        }
+
+        this.hass.callService(domain, service, serviceData);
+        return;
+      }
+    }
+
+    // Default behavior: toggle light entity
     if (!light.entity) return;
     
     const entity = this.hass.states[light.entity];
     if (!entity) return;
 
-    // Toggle the light
-    this.hass.callService("light", "toggle", {
+    // Determine domain from entity
+    const domain = light.entity.split('.')[0];
+    
+    // Toggle the entity
+    this.hass.callService(domain === 'light' ? 'light' : 'homeassistant', 'toggle', {
       entity_id: light.entity,
     });
+  }
+
+  _parseActionYaml(yamlString) {
+    // Simple YAML parser for action configuration
+    const result = {};
+    const lines = yamlString.trim().split('\n');
+    let currentSection = null;
+    let currentIndent = 0;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      const indent = line.search(/\S/);
+      const match = trimmed.match(/^([\w_]+):\s*(.*)$/);
+      
+      if (match) {
+        const [, key, value] = match;
+        
+        if (indent === 0) {
+          // Top level
+          if (value) {
+            result[key] = value;
+          } else {
+            result[key] = {};
+            currentSection = key;
+            currentIndent = indent;
+          }
+        } else if (currentSection) {
+          // Nested
+          if (typeof result[currentSection] !== 'object') {
+            result[currentSection] = {};
+          }
+          result[currentSection][key] = value;
+        }
+      }
+    }
+
+    return result;
   }
 
   getCardSize() {
@@ -372,6 +454,12 @@ class LightControlsCardEditor extends LitElement {
       min-height: 80px;
       font-family: monospace;
       font-size: 11px;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+      font-style: italic;
     }
     .color-row {
       display: flex;
@@ -699,6 +787,20 @@ class LightControlsCardEditor extends LitElement {
               ` : ''}
             </div>
           ` : ''}
+
+          <div class="row">
+            <label>Tap Action (YAML format - leave empty to toggle entity)</label>
+            <textarea
+              .value="${light.tap_action || ''}"
+              @input="${(e) => this._updateLight(index, 'tap_action', e.target.value)}"
+              placeholder="action: media_player.select_source
+target:
+  entity_id: media_player.living_room_tv
+data:
+  source: Netflix"
+            ></textarea>
+            <div class="hint">Define custom service call. Leave empty to toggle the entity.</div>
+          </div>
 
           <button class="remove-light-btn" @click="${() => this._removeLight(index)}">Remove Light</button>
         </div>
