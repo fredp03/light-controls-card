@@ -6,7 +6,7 @@ const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
 console.info(
-  `%c LIGHT-CONTROLS-CARD %c v1.0.7 `,
+  `%c LIGHT-CONTROLS-CARD %c v1.0.8 `,
   "color: white; background: #555; font-weight: bold;",
   "color: white; background: #e67e22; font-weight: bold;"
 );
@@ -447,163 +447,213 @@ class LightControlsCard extends LitElement {
   }
 }
 
-// Simple config editor with SVG editing per light
+// Visual config editor with organized sections
 class LightControlsCardEditor extends LitElement {
   static properties = {
     hass: {},
     config: {},
     _expandedLight: { state: true },
+    _expandedSections: { state: true },
   };
 
   static styles = css`
     .editor {
-      padding: 16px;
+      padding: 8px;
     }
+    
+    /* Collapsible Sections */
     .section {
-      margin-bottom: 24px;
+      margin-bottom: 12px;
       border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 8px;
-      padding: 16px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--card-background-color);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--secondary-background-color, #f5f5f5);
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .section-header:hover {
+      background: var(--primary-background-color, #eaeaea);
+    }
+    .section-icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
     }
     .section-title {
+      flex: 1;
       font-weight: 600;
-      margin-bottom: 12px;
       font-size: 14px;
       color: var(--primary-text-color);
     }
+    .section-chevron {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      transition: transform 0.2s;
+    }
+    .section-chevron.expanded {
+      transform: rotate(180deg);
+    }
+    .section-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .section-content.expanded {
+      max-height: 2000px;
+    }
+    .section-body {
+      padding: 16px;
+    }
+    
+    /* Form Elements */
     .row {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .row:last-child {
+      margin-bottom: 0;
     }
     label {
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       font-weight: 500;
-      font-size: 12px;
+      font-size: 13px;
+      color: var(--primary-text-color);
+    }
+    .sublabel {
+      font-weight: 400;
+      font-size: 11px;
       color: var(--secondary-text-color);
+      margin-left: 4px;
     }
     input[type="text"], textarea {
       width: 100%;
-      padding: 8px;
+      padding: 10px 12px;
       border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 4px;
+      border-radius: 8px;
       background: var(--card-background-color);
       color: var(--primary-text-color);
       box-sizing: border-box;
       font-family: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input[type="color"] {
-      width: 50px;
-      height: 32px;
-      padding: 2px;
-      border: 1px solid var(--divider-color, #e0e0e0);
-      border-radius: 4px;
-      cursor: pointer;
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary-color, #03a9f4);
+      box-shadow: 0 0 0 2px rgba(3, 169, 244, 0.2);
     }
     textarea {
       min-height: 80px;
-      font-family: monospace;
-      font-size: 11px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      resize: vertical;
     }
     .hint {
       font-size: 11px;
       color: var(--secondary-text-color);
-      margin-top: 4px;
-      font-style: italic;
+      margin-top: 6px;
+      line-height: 1.4;
     }
+    
+    /* Color Picker Row */
     .color-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .color-row:last-child {
+      border-bottom: none;
+    }
+    .color-row label {
+      margin-bottom: 0;
+      flex: 1;
+    }
+    .color-picker-wrapper {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .color-row label {
-      margin-bottom: 0;
-      min-width: 100px;
+    .color-value {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--secondary-text-color);
     }
-    .light-item {
-      border: 1px solid var(--divider-color, #e0e0e0);
+    input[type="color"] {
+      width: 40px;
+      height: 40px;
+      padding: 2px;
+      border: 2px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
-      margin-bottom: 12px;
-      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
     }
-    .light-header {
+    input[type="color"]:hover {
+      border-color: var(--primary-color, #03a9f4);
+    }
+    
+    /* Slider Row */
+    .slider-row {
+      padding: 8px 0;
+    }
+    .slider-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px;
-      background: var(--secondary-background-color, #f5f5f5);
-      cursor: pointer;
+      margin-bottom: 8px;
     }
-    .light-header:hover {
-      background: var(--primary-background-color, #e8e8e8);
+    .slider-header label {
+      margin-bottom: 0;
     }
-    .light-name {
-      font-weight: 500;
+    .slider-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-color, #03a9f4);
+      min-width: 40px;
+      text-align: right;
     }
-    .light-content {
-      padding: 12px;
-      display: none;
-    }
-    .light-content.expanded {
-      display: block;
-    }
-    .expand-icon {
-      transition: transform 0.2s;
-    }
-    .expand-icon.expanded {
-      transform: rotate(180deg);
-    }
-    .add-light-btn, .remove-light-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .add-light-btn {
-      background: var(--primary-color, #03a9f4);
-      color: white;
+    input[type="range"] {
       width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--divider-color, #e0e0e0);
+      appearance: none;
+      cursor: pointer;
     }
-    .remove-light-btn {
-      background: #f44336;
-      color: white;
-      margin-top: 8px;
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary-color, #03a9f4);
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.1s;
     }
-    .svg-preview {
-      display: flex;
-      gap: 16px;
-      margin-top: 8px;
-      padding: 8px;
-      background: var(--secondary-background-color, #f5f5f5);
-      border-radius: 4px;
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
     }
-    .svg-preview-item {
-      text-align: center;
-    }
-    .svg-preview-item span {
-      display: block;
-      font-size: 10px;
-      color: var(--secondary-text-color);
-      margin-top: 4px;
-    }
-    .svg-preview-box {
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #333;
-      border-radius: 4px;
-    }
-    .svg-preview-box svg {
-      max-width: 40px;
-      max-height: 40px;
-    }
+    
+    /* Toggle Row */
     .toggle-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 0;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .toggle-row:last-child {
+      border-bottom: none;
     }
     .toggle-row label {
       margin-bottom: 0;
@@ -611,7 +661,8 @@ class LightControlsCardEditor extends LitElement {
     .toggle-switch {
       position: relative;
       width: 48px;
-      height: 24px;
+      height: 26px;
+      flex-shrink: 0;
     }
     .toggle-switch input {
       opacity: 0;
@@ -627,47 +678,211 @@ class LightControlsCardEditor extends LitElement {
       bottom: 0;
       background-color: #ccc;
       transition: 0.3s;
-      border-radius: 24px;
+      border-radius: 26px;
     }
     .toggle-slider:before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
+      height: 20px;
+      width: 20px;
       left: 3px;
       bottom: 3px;
       background-color: white;
       transition: 0.3s;
       border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .toggle-switch input:checked + .toggle-slider {
       background-color: var(--primary-color, #03a9f4);
     }
     .toggle-switch input:checked + .toggle-slider:before {
-      transform: translateX(24px);
+      transform: translateX(22px);
     }
-    .scale-row {
-      margin-bottom: 12px;
+    
+    /* Light Items */
+    .lights-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .scale-row input[type="range"] {
-      width: 100%;
-      margin-top: 4px;
+    .light-item {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--card-background-color);
     }
-    .scale-value {
+    .light-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      background: var(--secondary-background-color, #f5f5f5);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .light-header:hover {
+      background: var(--primary-background-color, #e8e8e8);
+    }
+    .light-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .light-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary-color, #03a9f4);
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .light-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .light-entity {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+    }
+    .expand-icon {
       font-size: 12px;
       color: var(--secondary-text-color);
-      text-align: right;
-      margin-top: 4px;
+      transition: transform 0.2s;
+    }
+    .expand-icon.expanded {
+      transform: rotate(180deg);
+    }
+    .light-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .light-content.expanded {
+      max-height: 1500px;
+    }
+    .light-body {
+      padding: 16px;
+    }
+    
+    /* Light Editor Subsections */
+    .subsection {
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .subsection:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .subsection-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--secondary-text-color);
+      margin-bottom: 12px;
+    }
+    
+    /* SVG Preview */
+    .svg-preview {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .svg-preview-item {
+      flex: 1;
+      text-align: center;
+    }
+    .svg-preview-label {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      margin-bottom: 6px;
+    }
+    .svg-preview-box {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .svg-preview-box svg {
+      max-width: 40px;
+      max-height: 40px;
+    }
+    
+    /* Buttons */
+    .add-light-btn {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px dashed var(--primary-color, #03a9f4);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--primary-color, #03a9f4);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .add-light-btn:hover {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+    }
+    .remove-light-btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(244, 67, 54, 0.1);
+      color: #f44336;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .remove-light-btn:hover {
+      background: #f44336;
+      color: white;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--secondary-text-color);
+    }
+    .empty-state-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
     }
   `;
 
   constructor() {
     super();
     this._expandedLight = null;
+    this._expandedSections = { general: true, sizing: false, visibility: false, lights: true };
   }
 
   setConfig(config) {
     this.config = config;
+  }
+
+  _toggleSection(section) {
+    this._expandedSections = {
+      ...this._expandedSections,
+      [section]: !this._expandedSections[section]
+    };
+    this.requestUpdate();
   }
 
   render() {
@@ -677,131 +892,193 @@ class LightControlsCardEditor extends LitElement {
 
     return html`
       <div class="editor">
-        <!-- General Settings -->
+        <!-- General Settings Section -->
         <div class="section">
-          <div class="section-title">General Settings</div>
-          <div class="row">
-            <label>Title</label>
-            <input
-              type="text"
-              .value="${this.config.title || 'Light Controls'}"
-              @input="${(e) => this._updateConfig('title', e.target.value)}"
-            />
+          <div class="section-header" @click="${() => this._toggleSection('general')}">
+            <span class="section-icon">⚙️</span>
+            <span class="section-title">General Settings</span>
+            <span class="section-chevron ${this._expandedSections.general ? 'expanded' : ''}">▼</span>
           </div>
-          <div class="row color-row">
-            <label>Title Color</label>
-            <input
-              type="color"
-              .value="${this.config.title_color || '#998888'}"
-              @input="${(e) => this._updateConfig('title_color', e.target.value)}"
-            />
-          </div>
-          <div class="row color-row">
-            <label>Divider Color</label>
-            <input
-              type="color"
-              .value="${this.config.divider_color || '#9F9F9F'}"
-              @input="${(e) => this._updateConfig('divider_color', e.target.value)}"
-            />
-          </div>
-          
-          <!-- Scale Slider -->
-          <div class="scale-row">
-            <label>Global Scale</label>
-            <input
-              type="range"
-              min="0.5"
-              max="2"
-              step="0.1"
-              .value="${this.config.scale || 1}"
-              @input="${(e) => this._updateConfig('scale', parseFloat(e.target.value))}"
-            />
-            <div class="scale-value">${this.config.scale || 1}x</div>
-          </div>
-
-          <!-- Icon Size Slider -->
-          <div class="scale-row">
-            <label>Icon Size</label>
-            <input
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.1"
-              .value="${this.config.icon_size || 1}"
-              @input="${(e) => this._updateConfig('icon_size', parseFloat(e.target.value))}"
-            />
-            <div class="scale-value">${this.config.icon_size || 1}x</div>
-          </div>
-
-          <!-- Title Size Slider -->
-          <div class="scale-row">
-            <label>Title Size</label>
-            <input
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.1"
-              .value="${this.config.title_size || 1}"
-              @input="${(e) => this._updateConfig('title_size', parseFloat(e.target.value))}"
-            />
-            <div class="scale-value">${this.config.title_size || 1}x</div>
-          </div>
-
-          <!-- Label Size Slider -->
-          <div class="scale-row">
-            <label>Label Size</label>
-            <input
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.1"
-              .value="${this.config.label_size || 1}"
-              @input="${(e) => this._updateConfig('label_size', parseFloat(e.target.value))}"
-            />
-            <div class="scale-value">${this.config.label_size || 1}x</div>
-          </div>
-
-          <!-- Visibility Toggles -->
-          <div class="toggle-row">
-            <label>Show Title</label>
-            <label class="toggle-switch">
-              <input
-                type="checkbox"
-                .checked="${this.config.show_title !== false}"
-                @change="${(e) => this._updateConfig('show_title', e.target.checked)}"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="toggle-row">
-            <label>Show Divider</label>
-            <label class="toggle-switch">
-              <input
-                type="checkbox"
-                .checked="${this.config.show_divider !== false}"
-                @change="${(e) => this._updateConfig('show_divider', e.target.checked)}"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="toggle-row">
-            <label>Show Labels</label>
-            <label class="toggle-switch">
-              <input
-                type="checkbox"
-                .checked="${this.config.show_labels !== false}"
-                @change="${(e) => this._updateConfig('show_labels', e.target.checked)}"
-              />
-              <span class="toggle-slider"></span>
-            </label>
+          <div class="section-content ${this._expandedSections.general ? 'expanded' : ''}">
+            <div class="section-body">
+              <div class="row">
+                <label>Card Title</label>
+                <input
+                  type="text"
+                  .value="${this.config.title || 'Light Controls'}"
+                  @input="${(e) => this._updateConfig('title', e.target.value)}"
+                  placeholder="Light Controls"
+                />
+              </div>
+              
+              <div class="color-row">
+                <label>Title Color</label>
+                <div class="color-picker-wrapper">
+                  <span class="color-value">${this.config.title_color || '#998888'}</span>
+                  <input
+                    type="color"
+                    .value="${this.config.title_color || '#998888'}"
+                    @input="${(e) => this._updateConfig('title_color', e.target.value)}"
+                  />
+                </div>
+              </div>
+              <div class="color-row">
+                <label>Divider Color</label>
+                <div class="color-picker-wrapper">
+                  <span class="color-value">${this.config.divider_color || '#9F9F9F'}</span>
+                  <input
+                    type="color"
+                    .value="${this.config.divider_color || '#9F9F9F'}"
+                    @input="${(e) => this._updateConfig('divider_color', e.target.value)}"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Lights -->
+        <!-- Sizing Section -->
         <div class="section">
-          <div class="section-title">Lights</div>
-          ${(this.config.lights || []).map((light, index) => this._renderLightEditor(light, index))}
-          <button class="add-light-btn" @click="${this._addLight}">+ Add Light</button>
+          <div class="section-header" @click="${() => this._toggleSection('sizing')}">
+            <span class="section-icon">📐</span>
+            <span class="section-title">Sizing</span>
+            <span class="section-chevron ${this._expandedSections.sizing ? 'expanded' : ''}">▼</span>
+          </div>
+          <div class="section-content ${this._expandedSections.sizing ? 'expanded' : ''}">
+            <div class="section-body">
+              <div class="slider-row">
+                <div class="slider-header">
+                  <label>Global Scale <span class="sublabel">(affects all elements)</span></label>
+                  <span class="slider-value">${this.config.scale || 1}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  .value="${this.config.scale || 1}"
+                  @input="${(e) => this._updateConfig('scale', parseFloat(e.target.value))}"
+                />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <label>Icon Size</label>
+                  <span class="slider-value">${this.config.icon_size || 1}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  .value="${this.config.icon_size || 1}"
+                  @input="${(e) => this._updateConfig('icon_size', parseFloat(e.target.value))}"
+                />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <label>Title Size</label>
+                  <span class="slider-value">${this.config.title_size || 1}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  .value="${this.config.title_size || 1}"
+                  @input="${(e) => this._updateConfig('title_size', parseFloat(e.target.value))}"
+                />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <label>Label Size</label>
+                  <span class="slider-value">${this.config.label_size || 1}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  .value="${this.config.label_size || 1}"
+                  @input="${(e) => this._updateConfig('label_size', parseFloat(e.target.value))}"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visibility Section -->
+        <div class="section">
+          <div class="section-header" @click="${() => this._toggleSection('visibility')}">
+            <span class="section-icon">👁️</span>
+            <span class="section-title">Visibility</span>
+            <span class="section-chevron ${this._expandedSections.visibility ? 'expanded' : ''}">▼</span>
+          </div>
+          <div class="section-content ${this._expandedSections.visibility ? 'expanded' : ''}">
+            <div class="section-body">
+              <div class="toggle-row">
+                <label>Show Title</label>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    .checked="${this.config.show_title !== false}"
+                    @change="${(e) => this._updateConfig('show_title', e.target.checked)}"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <label>Show Divider</label>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    .checked="${this.config.show_divider !== false}"
+                    @change="${(e) => this._updateConfig('show_divider', e.target.checked)}"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <label>Show Labels</label>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    .checked="${this.config.show_labels !== false}"
+                    @change="${(e) => this._updateConfig('show_labels', e.target.checked)}"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lights Section -->
+        <div class="section">
+          <div class="section-header" @click="${() => this._toggleSection('lights')}">
+            <span class="section-icon">💡</span>
+            <span class="section-title">Lights</span>
+            <span class="section-chevron ${this._expandedSections.lights ? 'expanded' : ''}">▼</span>
+          </div>
+          <div class="section-content ${this._expandedSections.lights ? 'expanded' : ''}">
+            <div class="section-body">
+              ${(this.config.lights || []).length === 0 ? html`
+                <div class="empty-state">
+                  <div class="empty-state-icon">💡</div>
+                  <div>No lights configured yet</div>
+                </div>
+              ` : html`
+                <div class="lights-list">
+                  ${(this.config.lights || []).map((light, index) => this._renderLightEditor(light, index))}
+                </div>
+              `}
+              <button class="add-light-btn" @click="${this._addLight}">
+                <span>＋</span> Add Light
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -813,87 +1090,105 @@ class LightControlsCardEditor extends LitElement {
     return html`
       <div class="light-item">
         <div class="light-header" @click="${() => this._toggleLight(index)}">
-          <span class="light-name">${light.name || `Light ${index + 1}`}</span>
+          <div class="light-header-left">
+            <span class="light-number">${index + 1}</span>
+            <div>
+              <div class="light-name">${light.name || `Light ${index + 1}`}</div>
+              ${light.entity ? html`<div class="light-entity">${light.entity}</div>` : ''}
+            </div>
+          </div>
           <span class="expand-icon ${isExpanded ? 'expanded' : ''}">▼</span>
         </div>
         <div class="light-content ${isExpanded ? 'expanded' : ''}">
-          <div class="row">
-            <label>Entity ID</label>
-            <input
-              type="text"
-              .value="${light.entity || ''}"
-              @input="${(e) => this._updateLight(index, 'entity', e.target.value)}"
-              placeholder="light.my_light"
-            />
-          </div>
-          <div class="row">
-            <label>Display Name</label>
-            <input
-              type="text"
-              .value="${light.name || ''}"
-              @input="${(e) => this._updateLight(index, 'name', e.target.value)}"
-              placeholder="My Light"
-            />
-          </div>
-          <div class="row color-row">
-            <label>Label Color</label>
-            <input
-              type="color"
-              .value="${light.label_color || '#887B6F'}"
-              @input="${(e) => this._updateLight(index, 'label_color', e.target.value)}"
-            />
-          </div>
-          
-          <div class="row">
-            <label>SVG Icon (Off State) - Paste full SVG code</label>
-            <textarea
-              .value="${light.svg_off || ''}"
-              @input="${(e) => this._updateLight(index, 'svg_off', e.target.value)}"
-              placeholder="<svg>...</svg>"
-            ></textarea>
-          </div>
-          
-          <div class="row">
-            <label>SVG Icon (On State) - Paste full SVG code</label>
-            <textarea
-              .value="${light.svg_on || ''}"
-              @input="${(e) => this._updateLight(index, 'svg_on', e.target.value)}"
-              placeholder="<svg>...</svg>"
-            ></textarea>
-          </div>
-
-          ${(light.svg_off || light.svg_on) ? html`
-            <div class="svg-preview">
-              ${light.svg_off ? html`
-                <div class="svg-preview-item">
-                  <div class="svg-preview-box" .innerHTML="${light.svg_off}"></div>
-                  <span>Off</span>
+          <div class="light-body">
+            <!-- Basic Info -->
+            <div class="subsection">
+              <div class="subsection-title">Basic Information</div>
+              <div class="row">
+                <label>Entity ID</label>
+                <input
+                  type="text"
+                  .value="${light.entity || ''}"
+                  @input="${(e) => this._updateLight(index, 'entity', e.target.value)}"
+                  placeholder="light.living_room"
+                />
+              </div>
+              <div class="row">
+                <label>Display Name</label>
+                <input
+                  type="text"
+                  .value="${light.name || ''}"
+                  @input="${(e) => this._updateLight(index, 'name', e.target.value)}"
+                  placeholder="Living Room"
+                />
+              </div>
+              <div class="color-row">
+                <label>Label Color</label>
+                <div class="color-picker-wrapper">
+                  <span class="color-value">${light.label_color || '#887B6F'}</span>
+                  <input
+                    type="color"
+                    .value="${light.label_color || '#887B6F'}"
+                    @input="${(e) => this._updateLight(index, 'label_color', e.target.value)}"
+                  />
                 </div>
-              ` : ''}
-              ${light.svg_on ? html`
-                <div class="svg-preview-item">
-                  <div class="svg-preview-box" .innerHTML="${light.svg_on}"></div>
-                  <span>On</span>
-                </div>
-              ` : ''}
+              </div>
             </div>
-          ` : ''}
+            
+            <!-- Custom Icons -->
+            <div class="subsection">
+              <div class="subsection-title">Custom Icons (Optional)</div>
+              <div class="row">
+                <label>SVG Icon — Off State</label>
+                <textarea
+                  .value="${light.svg_off || ''}"
+                  @input="${(e) => this._updateLight(index, 'svg_off', e.target.value)}"
+                  placeholder="Paste SVG code here..."
+                ></textarea>
+              </div>
+              <div class="row">
+                <label>SVG Icon — On State</label>
+                <textarea
+                  .value="${light.svg_on || ''}"
+                  @input="${(e) => this._updateLight(index, 'svg_on', e.target.value)}"
+                  placeholder="Paste SVG code here..."
+                ></textarea>
+              </div>
+              ${(light.svg_off || light.svg_on) ? html`
+                <div class="svg-preview">
+                  <div class="svg-preview-item">
+                    <div class="svg-preview-label">Off State</div>
+                    <div class="svg-preview-box" .innerHTML="${light.svg_off || '<span style=\"color:#666\">—</span>'}"></div>
+                  </div>
+                  <div class="svg-preview-item">
+                    <div class="svg-preview-label">On State</div>
+                    <div class="svg-preview-box" .innerHTML="${light.svg_on || '<span style=\"color:#666\">—</span>'}"></div>
+                  </div>
+                </div>
+              ` : ''}
+              <div class="hint">Leave empty to use default light bulb icon. Paste full SVG code including the &lt;svg&gt; tags.</div>
+            </div>
 
-          <div class="row">
-            <label>Tap Action (YAML format - leave empty to toggle entity)</label>
-            <textarea
-              .value="${light.tap_action || ''}"
-              @input="${(e) => this._updateLight(index, 'tap_action', e.target.value)}"
-              placeholder="action: media_player.select_source
+            <!-- Custom Action -->
+            <div class="subsection">
+              <div class="subsection-title">Custom Action (Optional)</div>
+              <div class="row">
+                <label>Tap Action <span class="sublabel">YAML format</span></label>
+                <textarea
+                  .value="${light.tap_action || ''}"
+                  @input="${(e) => this._updateLight(index, 'tap_action', e.target.value)}"
+                  placeholder="action: light.turn_on
 target:
-  entity_id: media_player.living_room_tv
+  entity_id: light.living_room
 data:
-  source: Netflix"
-            ></textarea>
-            <div class="hint">Define custom service call. Leave empty to toggle the entity.</div>
-          </div>
+  brightness_pct: 100"
+                ></textarea>
+                <div class="hint">Leave empty to toggle the entity. Define a custom Home Assistant service call to override the default behavior.</div>
+              </div>
+            </div>
 
-          <button class="remove-light-btn" @click="${() => this._removeLight(index)}">Remove Light</button>
+            <button class="remove-light-btn" @click="${() => this._removeLight(index)}">Remove This Light</button>
+          </div>
         </div>
       </div>
     `;
